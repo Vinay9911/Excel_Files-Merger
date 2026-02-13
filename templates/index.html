@@ -1,0 +1,292 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Excel Merger Pro</title>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <script src="https://cdn.jsdelivr.net/npm/sortablejs@latest/Sortable.min.js"></script>
+    <style>
+        :root {
+            --primary: #10b981; /* Premium Emerald/Excel Green */
+            --primary-hover: #059669;
+            --bg-color: #f3f4f6;
+            --card-bg: #ffffff;
+            --text-main: #111827;
+            --text-muted: #6b7280;
+            --border: #e5e7eb;
+        }
+
+        body {
+            font-family: 'Inter', sans-serif;
+            margin: 0; padding: 40px 20px;
+            background-color: var(--bg-color);
+            color: var(--text-main);
+            display: flex; justify-content: center; align-items: flex-start;
+            min-height: 100vh;
+        }
+
+        .app-container {
+            background: var(--card-bg);
+            border-radius: 16px;
+            box-shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.05), 0 8px 10px -6px rgba(0, 0, 0, 0.01);
+            width: 100%; max-width: 600px;
+            border: 1px solid var(--border);
+            overflow: hidden;
+        }
+
+        /* Clean Header */
+        .header {
+            padding: 30px 40px;
+            border-bottom: 1px solid var(--border);
+            text-align: center;
+        }
+        .header h1 { margin: 0; font-size: 24px; font-weight: 700; letter-spacing: -0.5px; display: flex; align-items: center; justify-content: center; gap: 10px;}
+        .header h1 svg { color: var(--primary); width: 28px; height: 28px; }
+        .header p { margin: 8px 0 0 0; color: var(--text-muted); font-size: 14px; }
+
+        .content-body { padding: 40px; }
+
+        /* Form Inputs */
+        .form-group { margin-bottom: 24px; }
+        .form-group label { display: block; font-size: 13px; font-weight: 600; margin-bottom: 8px; color: var(--text-main); }
+        input[type="text"] {
+            width: 100%; box-sizing: border-box; padding: 12px 16px; border-radius: 8px;
+            border: 1px solid var(--border); font-family: 'Inter', sans-serif; font-size: 14px;
+            outline: none; transition: all 0.2s; background: #f9fafb;
+        }
+        input[type="text"]:focus { border-color: var(--primary); background: #fff; box-shadow: 0 0 0 3px rgba(16, 185, 129, 0.1); }
+
+        /* Modern Dropzone */
+        #drop-zone {
+            border: 2px dashed var(--border); border-radius: 12px; padding: 40px 20px;
+            text-align: center; cursor: pointer; transition: all 0.2s;
+            background: #f9fafb; margin-bottom: 24px;
+        }
+        #drop-zone:hover, #drop-zone.dragover { 
+            border-color: var(--primary); background: #ecfdf5; 
+        }
+        .drop-icon { color: var(--text-muted); width: 32px; height: 32px; margin-bottom: 12px; transition: 0.2s; }
+        #drop-zone:hover .drop-icon { color: var(--primary); }
+        .drop-text { font-size: 14px; font-weight: 500; color: var(--text-main); }
+        .drop-subtext { font-size: 13px; color: var(--text-muted); margin-top: 4px; }
+
+        /* File List */
+        #file-list { list-style: none; padding: 0; margin: 0 0 24px 0; max-height: 250px; overflow-y: auto; }
+        #file-list li {
+            background: #fff; border: 1px solid var(--border); margin-bottom: 8px; padding: 12px 16px;
+            border-radius: 8px; display: flex; justify-content: space-between; align-items: center;
+            font-size: 14px; font-weight: 500; box-shadow: 0 1px 2px rgba(0,0,0,0.02);
+        }
+        .file-info { display: flex; align-items: center; gap: 12px; }
+        .drag-handle { cursor: grab; color: #d1d5db; display: flex; align-items: center; }
+        .drag-handle:active { cursor: grabbing; }
+        .file-size { font-size: 12px; color: var(--text-muted); font-weight: 400; background: #f3f4f6; padding: 2px 8px; border-radius: 12px; }
+        .remove-btn { color: #ef4444; cursor: pointer; opacity: 0.6; transition: 0.2s; background: none; border: none; font-size: 18px; padding: 0;}
+        .remove-btn:hover { opacity: 1; transform: scale(1.1); }
+
+        /* Primary Action Button */
+        button.primary-btn {
+            background: var(--primary); color: white; font-weight: 600; border: none;
+            padding: 14px 24px; font-size: 15px; border-radius: 8px; cursor: pointer;
+            width: 100%; transition: all 0.2s; display: flex; justify-content: center; align-items: center; gap: 8px;
+        }
+        button.primary-btn:hover { background: var(--primary-hover); }
+        button.primary-btn:disabled { background: #9ca3af; cursor: not-allowed; }
+
+        /* Clean Processing Console */
+        #console-wrapper { display: none; margin-top: 24px; border-top: 1px solid var(--border); padding-top: 24px; }
+        .console-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 12px;}
+        .console-header h3 { margin: 0; font-size: 14px; font-weight: 600; color: var(--text-main); }
+        
+        #live-console {
+            background: #f9fafb; font-family: 'Inter', monospace; font-size: 13px;
+            padding: 16px; border-radius: 8px; height: 200px; overflow-y: auto;
+            border: 1px solid var(--border); line-height: 1.6;
+        }
+
+        /* Log Formatting */
+        .log-system { color: #6b7280; font-style: italic; }
+        .log-file { color: #111827; font-weight: 600; margin-top: 8px; display: block; }
+        .log-sheet { color: #4b5563; padding-left: 10px; display: block; }
+        .log-success { color: #10b981; font-weight: 600; display: block; margin-top: 8px; }
+        .log-error { color: #ef4444; font-weight: 500; display: block; }
+        .log-warning { color: #f59e0b; font-weight: 600; display: block; margin-top: 8px; }
+        .log-summary { color: #374151; font-weight: 600; display: block; }
+
+        /* Spinner */
+        .spinner {
+            display: none; width: 18px; height: 18px; border: 2.5px solid rgba(255,255,255,0.3);
+            border-radius: 50%; border-top-color: white; animation: spin 0.8s linear infinite;
+        }
+        @keyframes spin { to { transform: rotate(360deg); } }
+
+        ::-webkit-scrollbar { width: 6px; }
+        ::-webkit-scrollbar-track { background: transparent; }
+        ::-webkit-scrollbar-thumb { background: #d1d5db; border-radius: 10px; }
+        ::-webkit-scrollbar-thumb:hover { background: #9ca3af; }
+    </style>
+</head>
+<body>
+
+<div class="app-container">
+    <div class="header">
+        <h1>
+            <svg fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 17v-2m3 2v-4m3 4v-6m2 10H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"></path></svg>
+            Excel Merger Pro
+        </h1>
+        <p>Preserve 100% native formatting and automatically generate an Index sheet.</p>
+    </div>
+    
+    <div class="content-body">
+        <div class="form-group">
+            <label>Final Output Name</label>
+            <input type="text" id="custom-filename" placeholder="e.g., Master_Report_2026" value="Merged_Workbooks">
+        </div>
+
+        <div id="drop-zone">
+            <svg class="drop-icon" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M7 16a4 4 0 01-.88-7.903A5 5 0 1115.9 6L16 6a5 5 0 011 9.9M15 13l-3-3m0 0l-3 3m3-3v12"></path></svg>
+            <div class="drop-text">Click to browse or drag and drop files</div>
+            <div class="drop-subtext">Supports .xlsx and .xls formats</div>
+        </div>
+        <input type="file" id="file-input" multiple accept=".xlsx, .xls" style="display: none;">
+        
+        <ul id="file-list"></ul>
+        
+        <button id="submit-btn" class="primary-btn">
+            <div class="spinner" id="spinner"></div>
+            <span id="btn-text">Merge Workbooks</span>
+        </button>
+
+        <div id="console-wrapper">
+            <div class="console-header">
+                <h3>Processing Status</h3>
+            </div>
+            <div id="live-console"></div>
+        </div>
+    </div>
+</div>
+
+<script>
+    const dropZone = document.getElementById('drop-zone');
+    const fileInput = document.getElementById('file-input');
+    const fileList = document.getElementById('file-list');
+    const submitBtn = document.getElementById('submit-btn');
+    const btnText = document.getElementById('btn-text');
+    const spinner = document.getElementById('spinner');
+    const consoleWrapper = document.getElementById('console-wrapper');
+    const liveConsole = document.getElementById('live-console');
+    const filenameInput = document.getElementById('custom-filename');
+    
+    let selectedFiles = []; 
+    new Sortable(fileList, { animation: 150, handle: '.drag-handle' });
+
+    dropZone.addEventListener('click', () => fileInput.click());
+    dropZone.addEventListener('dragover', (e) => { e.preventDefault(); dropZone.classList.add('dragover'); });
+    dropZone.addEventListener('dragleave', () => dropZone.classList.remove('dragover'));
+    dropZone.addEventListener('drop', (e) => {
+        e.preventDefault(); dropZone.classList.remove('dragover');
+        handleFiles(e.dataTransfer.files);
+    });
+    fileInput.addEventListener('change', (e) => handleFiles(e.target.files));
+
+    function formatBytes(bytes) {
+        if (bytes === 0) return '0 B';
+        const k = 1024; const sizes = ['B', 'KB', 'MB', 'GB'];
+        const i = Math.floor(Math.log(bytes) / Math.log(k));
+        return parseFloat((bytes / Math.pow(k, i)).toFixed(1)) + ' ' + sizes[i];
+    }
+
+    function handleFiles(files) {
+        for (let file of files) {
+            if (!selectedFiles.some(f => f.name === file.name) && (file.name.endsWith('.xlsx') || file.name.endsWith('.xls'))) {
+                selectedFiles.push(file);
+                const li = document.createElement('li');
+                li.innerHTML = `
+                    <div class="file-info">
+                        <div class="drag-handle"><svg width="16" height="16" fill="currentColor" viewBox="0 0 16 16"><path d="M7 2a1 1 0 1 1-2 0 1 1 0 0 1 2 0zm3 0a1 1 0 1 1-2 0 1 1 0 0 1 2 0zM7 5a1 1 0 1 1-2 0 1 1 0 0 1 2 0zm3 0a1 1 0 1 1-2 0 1 1 0 0 1 2 0zM7 8a1 1 0 1 1-2 0 1 1 0 0 1 2 0zm3 0a1 1 0 1 1-2 0 1 1 0 0 1 2 0zM7 11a1 1 0 1 1-2 0 1 1 0 0 1 2 0zm3 0a1 1 0 1 1-2 0 1 1 0 0 1 2 0zM7 14a1 1 0 1 1-2 0 1 1 0 0 1 2 0zm3 0a1 1 0 1 1-2 0 1 1 0 0 1 2 0z"/></svg></div>
+                        <span>${file.name}</span>
+                        <span class="file-size">${formatBytes(file.size)}</span>
+                    </div> 
+                    <button class="remove-btn" onclick="removeFile('${file.name}', this)">×</button>`;
+                li.dataset.name = file.name;
+                fileList.appendChild(li);
+            }
+        }
+    }
+
+    window.removeFile = function(fileName, btnElement) {
+        selectedFiles = selectedFiles.filter(f => f.name !== fileName);
+        btnElement.closest('li').remove();
+    }
+
+    function logToConsole(message, type) {
+        const span = document.createElement('span');
+        span.className = `log-${type}`;
+        span.textContent = message;
+        liveConsole.appendChild(span);
+        liveConsole.scrollTop = liveConsole.scrollHeight; 
+    }
+
+    submitBtn.addEventListener('click', async () => {
+        if (selectedFiles.length === 0) return alert("Please select files to merge.");
+        
+        submitBtn.disabled = true;
+        btnText.textContent = "Processing Data...";
+        spinner.style.display = "block";
+        consoleWrapper.style.display = "block";
+        liveConsole.innerHTML = ""; 
+
+        let finalName = filenameInput.value.trim() || "Merged_Workbooks";
+        logToConsole("Uploading files to staging environment...", "system");
+
+        const formData = new FormData();
+        const currentListItems = document.querySelectorAll('#file-list li');
+        currentListItems.forEach(li => {
+            const fileObj = selectedFiles.find(f => f.name === li.dataset.name);
+            if (fileObj) formData.append('files', fileObj);
+        });
+
+        try {
+            const uploadRes = await fetch('/upload', { method: 'POST', body: formData });
+            const uploadData = await uploadRes.json();
+            if (!uploadRes.ok) throw new Error(uploadData.error || "Upload failed");
+            
+            const evtSource = new EventSource(`/stream/${uploadData.job_id}?filename=${encodeURIComponent(finalName)}`);
+            
+            evtSource.onmessage = function(event) {
+                const data = JSON.parse(event.data);
+                if (data.log) { logToConsole(data.log, data.type); }
+                
+                if (data.status === 'complete') {
+                    evtSource.close();
+                    logToConsole("Downloading final file...", "success");
+                    window.location.href = `/download/${uploadData.job_id}?filename=${encodeURIComponent(data.filename)}`;
+                    resetUI();
+                } else if (data.status === 'error') {
+                    evtSource.close();
+                    resetUI();
+                }
+            };
+            
+            evtSource.onerror = function() {
+                evtSource.close();
+                logToConsole("Connection to server lost.", "error");
+                resetUI();
+            };
+
+        } catch (error) {
+            logToConsole(error.message, "error");
+            resetUI();
+        }
+    });
+
+    function resetUI() {
+        submitBtn.disabled = false;
+        btnText.textContent = "Merge Workbooks";
+        spinner.style.display = "none";
+    }
+</script>
+
+</body>
+</html>
